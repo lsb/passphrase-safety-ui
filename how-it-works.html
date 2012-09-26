@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      body { font: 12pt Georgia; width: 6in; margin: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>
+      How <a href="http://www.leebutterman.com/passphrase-safety/">Passphrase-Safety</a> works.
+    </h1>
+    <h3>
+      The ultimate goal is to take a passphrase, tokenize it into individual words, and find low-entropy words in increasingly-long contexts (0th order Markov model, 1st order, 2nd order), using completely local data sources.
+    </h3>
+    <p>
+      The front end is a straightforward Backbone.js GUI.<br>
+      Those models and views rely on querying for the existence of 1-grams, 2-grams, and 3-grams in pre-loaded data structures.
+    </p>
+    <p>
+      The backend needs knowledge of roughly 10 million 2-grams and roughly 40 million 3-grams.<br>
+      For easiest delivery, a browser-based app makes the most sense.<br>
+      We don't need complicated metadata; we just need basic set membership, and approximate set membership at that: a false positive (an ngram is in a low-entropy set when it isn't) is fine.<br>
+      A probabilistic data structure like a <a href="http://en.wikipedia.org/wiki/Bloom_filter">Bloom filter</a> is a good bet.<br>
+      <i style="font-size: 85%">(Short intro to Bloom filters: you have a bit array, and keys to add to your set. Hash each key to one or more bits in the bit array, and at query time, if all the bits are set then the key is said to be in the set; if one bit isn't, then it's guaranteed not in the set.)</i><br>
+      We can compress the Bloom filter, though, and make it simpler. Instead of using a multiple of hash functions, just use one, so for a 1 in 100 false positive rate, you'd need 100N bits.<br>
+      Instead of storing the bits literally, run-length encode.<br>
+      The bits that are set is pseudo-random (with a good cryptographic hash function), so the differences are distributed unformly, and <a href="http://en.wikipedia.org/wiki/Golomb_coding">Golomb coding</a> is optimal for that. (This is described in vastly greater detail in <a href="http://algo2.iti.kit.edu/singler/publications/cacheefficientbloomfilters-wea2007.pdf">Cache-, Hash- and Space-Efficient Bloom Filters</a>, by Putze, Sanders and Singler.)<br>
+      To deliver the Golomb-compressed sequence to the browser, I base64-encoded the binary data, and wrapped it up with some metadata in a JSON object. (For decoding, you need the number of bits used for the binary part of the unary/binary pair in a Golomb code, and it's convenient to have a count of total keys encoded, and for encoding you'd need to know the total number of bits used.)
+    </p>
+    <p>
+      A good number of moving pieces, a fair number of edgecases to get correct, a strong requirement to deal with large amount of input (that get hashed down), and a strong requirement for querying to be fast.
+    </p>
+    <p>
+      To implement encoding, I used Haskell. (The <a href="https://github.com/lsb/gcs">code</a> is up on Github.) After a prototype using linked lists of booleans to represent bits, I moved to a bytestring of 8-bit words. The end goal was always high-speed querying in Javascript, but my plan was to use only structures and algorithms common to both, so no elegant monadic Binary and Bit interfaces that would need to get implemented with lots of overhead.<br>
+      The Golomb querying ends up being very fast. The code takes a bytestring, tail-recursively pulls off 8-bit words from the front, and does the binary decoding. Because there's tail-call optimization, the recursive calls don't use linear stack space, and the referential transparency means that it's very easy to debug.<br>
+      The ease of debuggability that comes with referential transparency is hard to overstate. There's a lot of state involved with Golomb decoding, and with pattern matching, each of the different states is literally a line of code, which reduces the complexity of the <a href="https://github.com/lsb/gcs/blob/master/GolombQuery.hs">query code</a> substantially.<br>
+      Having a reference implementation in Haskell, I hand-translated the TCO code into a Javascript while loop, with all of the function parameters are local variables above the loop.<br>
+      After finishing version 1, I looked over the JS, and realized I'd written out code I would never have thought up from scratch. There's a <a href="http://www.cs.indiana.edu/~jsobel/c455-c511.updated.txt">similar story</a> about Jonathan Sobel doing that with Scheme to C, using gotos for the first time.  Similarly, I'd never written an enormous while loop, with destructive assignment to over half a dozen variables, but that was the logical translation of the Haskell code, and it worked the first time.
+    </p>
+    <p>
+      &mdash;Lee Butterman, San Francisco, 2012.
+    </p>
+  </body>
+</html>

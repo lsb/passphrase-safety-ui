@@ -1,0 +1,77 @@
+<!doctype HTML>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <script src="jquery.min.js"></script>
+    <script src="underscore-min.js"></script>
+    <script src="backbone-min.js"></script>
+    <script src="GolombQuery.js"></script>
+    <script src="biginteger.js"></script>
+    <script src="md5-min.js"></script>
+    <script>
+      $(function() {
+        $.get("passphrase.js", function(js) {
+          eval(js);
+          new Passphrase.display.App({model: new Backbone.Model({})});
+        });
+      });
+    </script>
+    <style>
+      body {
+        font: 12pt Georgia;
+        width: 10in;
+        margin: auto;
+        position: relative;
+      }
+      textarea {
+        width: 3in;
+        height: 1in;
+        font: 12pt monospace;
+      }
+      .entropy0, .entropy1, .entropy2, .entropy3 {
+        display: inline-block; padding: 1em; margin: 1em 0.5em 1em 0em; cursor: pointer;
+      }
+      .entropy0 { background-color: #ff3300; }
+      .entropy1 { background-color: orange; }
+      .entropy2 { background-color: lightgreen; }
+      .entropy3 { background-color: lightblue; }
+    </style>
+  </head>
+  <body>
+    <h1>How secure is your passphrase?</h1>
+    
+    <a href="http://xkcd.com/936/" style="float:right; margin: 0px 0px 0px 3em"><img src="http://imgs.xkcd.com/comics/password_strength.png" width="525" height="375"><br><div style="text-align: right; width: 100%">xkcd.com</div></a>
+    
+    <h3>
+      Analyze it <a title="How it works" href="how-it-works.html">all in your browser</a>.
+    </h3>
+
+    <div>
+      High entropy passphrase:
+      <div id="hi-entropy-demo">correct / horse / battery / staple (loading...)</div>
+    </div>
+
+    <div>
+      Low entropy passphrase:
+      <div id="lo-entropy-demo">Once / upon / a / time (loading...)</div>
+    </div>
+
+    <p>Try it out yourself!<br>The greener the better. Oranges are okay.</p>
+    
+    <div id="app">
+      <textarea id="passphrase-input"></textarea><br>
+      <button>Check passphrase locally</button><br>
+      <div id="vis"></div>
+    </div>
+    
+    <p style="margin-top: 1in">
+      <a href="how-it-works.html">How it works</a>
+      <br><br>
+      Entropy gets calculated from word-based Markov models of modern printed English, via Google Books ngram data set.<br>
+      Code available on GitHub for <a href="http://github.com/lsb/text-entropy">creating the statistical model</a> and code available for the
+      <a href="https://github.com/lsb/text-entropy-api">data strucutre more efficient than a Bloom filter</a> for compactly representing it as a set.
+    </p>
+    
+    <p>&copy; 2012 <a href="http://www.leebutterman.com">Lee Butterman</a>.</p>
+  </body>
+</html>
